@@ -13,16 +13,16 @@ local CURRENTPLAYER
 local BottomTab = {"Party", "Guild"}
 local PartyList = {}
 local raidList = { }
-    raidList[1] = {full = "The Arcway", short = "Arc"}
-    raidList[2] = {full = "Assault on Violet Hold", short = "AoVH"}
-    raidList[3] = {full = "Black Rook Hold", short = "BRH"}
-    raidList[4] = {full = "Court of Stars", short = "CoS"}
-    raidList[5] = {full = "Darkheart Thicket", short = "DT"}
-    raidList[6] = {full = "Eye of Azshara", short = "EoA"}
-    raidList[7] = {full = "Halls of Valor", short = "HoV"}
-    raidList[8] = {full = "Maw of Souls", short = "MoS"}
-    raidList[9] = {full = "Neltharion's Lair", short = "NL"}
-    raidList[10] = {full = "Vault of the Wardens", short = "VotW"}
+    raidList[1] = {full = "Atal'Dazar", short = "Atal"}
+    raidList[2] = {full = "Freehold", short = "FH"}
+    raidList[3] = {full = "Kings' Rest", short = "KR"}
+    raidList[4] = {full = "Shrine of the Storm", short = "SotS"}
+    raidList[5] = {full = "Siege of Boralus", short = "SoB"}
+    raidList[6] = {full = "Temple of Sethraliss", short = "ToS"}
+    raidList[7] = {full = "The MOTHERLODE!!", short = "LODE"}
+    raidList[8] = {full = "The Underrot", short = "TU"}
+    raidList[9] = {full = "Tol Dagor", short = "TD"}
+    raidList[10] = {full = "Waycrest Manor", short = "WM"}
     
 local diffList = { }
     --diffList[0] = "Normal"
@@ -86,7 +86,7 @@ local function toggleShowAddon()
 	end
 end
 local function RequestGuildUpdate()
-    SendAddonMessage("PartyLockGuild", "Update" , "Guild")
+    C_ChatInfo.SendAddonMessage("PartyLockGuild", "Update" , "GUILD")
 end
 function SlashCmdList.PARTYLOCK(msg, editbox) 
 	
@@ -243,7 +243,7 @@ end
 function stageMessage()
     local msg = CURRENTPLAYER
     local diff, dun
-    if not CURRENTPLAYER then return "" end
+    if CURRENTPLAYER == nil or CURRENTPLAYER == "" then return "" end
     
     msg = msg..','..PartyLockVar.player[CURRENTPLAYER].stats.spec
     msg = msg..','..PartyLockVar.player[CURRENTPLAYER].stats.ilvl    
@@ -269,16 +269,16 @@ function UpdateGuild()
     if PartyLockVar.LastGuildPing + 120 < time() and IsInGuild() then 
         local msg = stageMessage()
         if not msg then return end
-        SendAddonMessage("PartyLockGuild", msg , "Guild")
+        C_ChatInfo.SendAddonMessage("PartyLockGuild", msg , "GUILD")
         PartyLockVar.LastGuildPing = time()
     end
 end
 function UpdateParty()
-
-    if PartyLockVar.LastPartyPing + 60 < time() and IsInGuild() then
+    -- Verify only update no more than once every 60 seconds
+    if PartyLockVar.LastPartyPing + 60 < time() and IsInGroup() then
         local msg = stageMessage()
         if not msg then return end
-        SendAddonMessage("PartyLockParty", msg , "Party")
+        C_ChatInfo.SendAddonMessage("PartyLockParty", msg , "PARTY")
         PartyLockVar.LastPartyPing = time()
     end
 end
@@ -423,8 +423,9 @@ local function CreateTable()
 end
 local function playerInit() 
     local fontstring, spec
-    CURRENTPLAYER = UnitName("player").."-"..GetRealmName()
-    CURRENTPLAYER = string.gsub(CURRENTPLAYER, " ", '')
+    -- Moved this to the addoninit function
+    -- CURRENTPLAYER = UnitName("player").."-"..GetRealmName()
+    -- CURRENTPLAYER = string.gsub(CURRENTPLAYER, " ", '')
     
     spec = GetSpecialization() 
     spec = spec and select(2, GetSpecializationInfo(spec)) or '<spec>'
@@ -445,7 +446,6 @@ local function playerInit()
             savedDungeons = {}                    
     }
     
-    
     -- If the player logs in and already in a party grab the party members. Regardless if in a group add current player into the group
     PartyLockVar.Party = GetHomePartyInfo() or {}
     table.insert(PartyLockVar.Party, 1, CURRENTPLAYER) 
@@ -456,7 +456,7 @@ local function addonInit()
 	PartyLockTitle:SetText("|cff3D86AB Party Lock")
 	PartyLockTitle:SetWidth(400)    
     --PartyLockTitle:SetResizable(true) 
-     -- Create fontstring to show and hide
+    -- Create fontstring to show and hide
     for i = 1, 80 do
         fontstring = PartyLock:CreateFontString("$parentFontString1"..i, "ARTWORK", "GameFontNormal")
         fontstring = PartyLock:CreateFontString("$parentFontString2"..i, "ARTWORK", "GameFontNormal")
@@ -522,8 +522,11 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
             return
         end
 
-        success = RegisterAddonMessagePrefix("PartyLockParty")
-        success = RegisterAddonMessagePrefix("PartyLockGuild")
+        CURRENTPLAYER = UnitName("player").."-"..GetRealmName()
+        CURRENTPLAYER = string.gsub(CURRENTPLAYER, " ", '')
+
+        success = C_ChatInfo.RegisterAddonMessagePrefix("PartyLockParty")
+        success = C_ChatInfo.RegisterAddonMessagePrefix("PartyLockGuild")
         addonInit()
         
         -- Update party when logging in if player is current grouped    
@@ -533,7 +536,7 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
         ParsePlayerRaidInfo()
         UpdateParty()
         
-        --When first logging in and after getting the updated raid info send a message to the guild for everyone else to be updated
+        -- When first logging in and after getting the updated raid info send a message to the guild for everyone else to be updated
         -- This is to help for those players who do not open use this AddOn often
         if not PartyLockVar.updateGuild then
             UpdateGuild()
@@ -551,11 +554,12 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
     
         -- Only listen to incoming messages from this AddOn
         if (arg1 == "PartyLockParty" or arg1 == "PartyLockGuild") and arg2 ~= nil then   
+
             if (arg2 == "Update") then
                 UpdateGuild()
             
              -- Allow additional verbs like Update, Check, etc to take place without breaking future versions
-            elseif string.len(arg2) > 10 then                
+            elseif string.len(arg2) > 10 then
                 ParseIncomingPlayer(arg2)
             end
         end   
