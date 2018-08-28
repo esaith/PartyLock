@@ -53,8 +53,6 @@
         <OnLoad function="PartyLock_OnLoad" />
         <OnShow function="PartyLock_OnShow" />
         <OnEvent function="PartyLock_OnEvent" />
-        <OnUpdate function="PartyLock_OnUpdate" />
-        <OnEscapePressed>self:Hide();</OnEscapePressed>
         <OnDragStart>self:StartMoving();</OnDragStart>
         <OnDragStop>self:StopMovingOrSizing();</OnDragStop>
 	</Scripts>
