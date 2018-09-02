@@ -6,13 +6,10 @@
 <Script file="Libs\CallbackHandler-1.0.lua"/>
 <Script file="PartyLock.lua"/>
 
-<!--@no-lib-strip@-->
 <Include file="Libs\lib-st.xml"/>
-<!--@end-no-lib-strip@-->
-
 
 <Frame name="PartyLock" parent="UIParent" hidden="true" frameStrata="HIGH" inherits="" movable="true">
-	<Size x="870" y="630" />
+	<Size x="890" y="630" />
 	<Anchors>
 		<Anchor point="CENTER" relativeTo="UIParent" relativePoint="CENTER" />
 	</Anchors>	
@@ -28,25 +25,16 @@
         <Layer level="ARTWORK">
             <Texture name="$parentHeader" file="Interface\DialogFrame\UI-DialogBox-Header">
                 <Size>
-                    <AbsDimension x="300" y="64"/>
+                    <AbsDimension x="300" y="60"/>
                 </Size>
                 <Anchors>
                     <Anchor point="TOP">
                         <Offset>
-                            <AbsDimension x="0" y="12"/>
+                            <AbsDimension x="0" y="10"/>
                         </Offset>
                     </Anchor>
                 </Anchors>
             </Texture>
-            <FontString name="$parentTitle" inherits="GameFontNormal">
-                <Anchors>
-                    <Anchor point="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="-3" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </FontString>
         </Layer>
     </Layers>
 	<Scripts>
@@ -102,5 +90,4 @@
 			<OnShow function="PartyLock_OnShow" />
 		</Scripts>
     </Frame>
-
 </Ui>
