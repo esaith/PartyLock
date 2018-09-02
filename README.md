@@ -2,6 +2,14 @@
 
 Wow Addon for Mythic Party locks
 
+/partylock -- opens addon
+
+/partylock center -- recenters addon if removed from the page
+
+/partylock request -- same as pressing the button. Requests update from all guild and party members
+
+/pl -- shortcut to open addon
+
 Special Thanks To:
 - Cromzinc for all the suggestions on the UI and functionality
 - Beerhunter and Chairepoppa for testing where few would
