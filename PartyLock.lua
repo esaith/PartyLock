@@ -16,16 +16,24 @@ local BottomTabIndex
 local PartyList
 
 local raidList = {}
-raidList[1] = {full = "Atal'Dazar", short = "Atal"}
-raidList[2] = {full = "Freehold", short = "FH"}
-raidList[3] = {full = "Kings' Rest", short = "KR"}
-raidList[4] = {full = "Shrine of the Storm", short = "SotS"}
-raidList[5] = {full = "Siege of Boralus", short = "SoB"}
-raidList[6] = {full = "Temple of Sethraliss", short = "ToS"}
-raidList[7] = {full = "The MOTHERLODE!!", short = "LODE"}
-raidList[8] = {full = "The Underrot", short = "TU"}
-raidList[9] = {full = "Tol Dagor", short = "TD"}
-raidList[10] = {full = "Waycrest Manor", short = "WM"}
+-- raidList[1] = {full = "Atal'Dazar", short = "Atal"}
+-- raidList[2] = {full = "Freehold", short = "FH"}
+-- raidList[3] = {full = "Kings' Rest", short = "KR"}
+-- raidList[4] = {full = "Shrine of the Storm", short = "SotS"}
+-- raidList[5] = {full = "Siege of Boralus", short = "SoB"}
+-- raidList[6] = {full = "Temple of Sethraliss", short = "ToS"}
+-- raidList[7] = {full = "The MOTHERLODE!!", short = "LODE"}
+-- raidList[8] = {full = "The Underrot", short = "TU"}
+-- raidList[9] = {full = "Tol Dagor", short = "TD"}
+-- raidList[10] = {full = "Waycrest Manor", short = "WM"}
+raidList[1] = {full = "The Necrotic Wake", short = "NW"}
+raidList[2] = {full = "Plaguefall", short = "PF"}
+raidList[3] = {full = "Mists of Tirna Scithe", short = "MoTS"}
+raidList[4] = {full = "Halls of Atonement", short = "HoA"}
+raidList[5] = {full = "Theater of Pain", short = "ToP"}
+raidList[6] = {full = "De Other Side", short = "DoS"}
+raidList[7] = {full = "Spires of Ascension", short = "SoA"}
+raidList[8] = {full = "Sanguine Depths", short = "SD"}
 
 local diffList = {}
 --diffList[0] = "Normal"
@@ -71,6 +79,7 @@ local function console(...)
 
     print(...)
 end
+
 local function parseTime(time)
     time = math.floor(tonumber(time))
 
@@ -368,9 +377,20 @@ local function parseIncomingPlayer(str)
     end
 end
 local function isAGuildMember(playerObj, guildName)
-    return guildName ~= nil and playerObj.stats.guild == guildName or playerObj.stats.guildie -- playerObj.stats.guildie has been depreciated in 1.05
+    return guildName ~= nil and playerObj.stats.guild == guildName
 end
-local function updateTableData()
+local function updateTableData(tabId)
+    local difficulty
+
+    if tabId == 1 or tabId == 3 then
+        difficulty = "Mythic"
+    else
+        difficulty = "Heroic"
+    end
+
+    if not PartyLockVar or not PartyLockVar.player then
+        return
+    end
     local guildName = GetGuildInfo("player")
     local offlineColor = {r = 0.27, g = 0.38, b = 0.43, a = 1.0} -- #46626E
     local t = math.floor((time() / 1000) % 10000)
@@ -379,11 +399,13 @@ local function updateTableData()
 
     for player, playerObj in pairs(PartyLockVar.player) do
         local shouldShowPlayer =
-            BottomTab == "Guild" and isAGuildMember(playerObj, guildName) or
-            BottomTab == "Party" and isInParty(player, getPartyMembers()) or
+            BottomTab == "MGuild" and isAGuildMember(playerObj, guildName) or
+            BottomTab == "HGuild" and isAGuildMember(playerObj, guildName) or
+            BottomTab == "MParty" and isInParty(player, getPartyMembers()) or
+            BottomTab == "HParty" and isInParty(player, getPartyMembers()) or
             player == getCurrentPlayer()
 
-        if shouldShowPlayer and playerObj.savedDungeons.Mythic then
+        if shouldShowPlayer and playerObj.savedDungeons[difficulty] then
             local color =
                 isAGuildMember(playerObj, guildName) and not isGuildMemberOnline(player) and offlineColor or rowColor
 
@@ -402,13 +424,13 @@ local function updateTableData()
             for key, raid in ipairs(raidList) do
                 local val = ""
                 if
-                    playerObj.savedDungeons and playerObj.savedDungeons.Mythic and
-                        playerObj.savedDungeons.Mythic[raid.full] ~= nil
+                    playerObj.savedDungeons and playerObj.savedDungeons[difficulty] and
+                        playerObj.savedDungeons[difficulty][raid.full] ~= nil
                  then
-                    playerObj.savedDungeons.Mythic[raid.full].time =
-                        parseTime(playerObj.savedDungeons.Mythic[raid.full].time)
+                    playerObj.savedDungeons[difficulty][raid.full].time =
+                        parseTime(playerObj.savedDungeons[difficulty][raid.full].time)
 
-                    if playerObj.savedDungeons.Mythic[raid.full].time > t then
+                    if playerObj.savedDungeons[difficulty][raid.full].time > t then
                         val = "X"
                     end
                 end
@@ -420,7 +442,9 @@ local function updateTableData()
         end
     end
 
-    GuildTable:SetData(rows)
+    if (table.getn(rows) > 0 and GuildTable ~= nil) then
+        GuildTable:SetData(rows)
+    end
 end
 local function createTable()
     ScrollingTable = LibStub("ScrollingTable")
@@ -513,12 +537,12 @@ local function playerInit()
     updatePartyMemberList()
 end
 local function createTitle()
-    local title = PartyLock:CreateFontString("$parentTitle", "ARTWORK", "GameFontNormal")
-    title:SetPoint("TOP", "$parent", "TOP", 0, -3)
+    local title = PartyLock:CreateFontString("$parentTitle", "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOP", "$parent", "TOP", 0, -2)
     title:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE, THICKOUTLINE")
-    title:SetPoint("TOP", "$parent", "TOP", 0, 0)
     title:SetText("|cff3D86AB Party Lock")
     title:SetWidth(400)
+    title:Show()
 end
 local function createCloseButton()
     local btn = CreateFrame("Button", "$parentCloseButton", PartyLock, "UIMenuButtonStretchTemplate")
@@ -562,7 +586,7 @@ local function addonInit()
     createRequestButton()
 
     createTable()
-    updateTableData()
+    updateTableData(BottomTabIndex)
 end
 function PartyLock_OnLoad(self, event, ...)
     self:RegisterEvent("ADDON_LOADED")
@@ -573,6 +597,22 @@ function PartyLock_OnLoad(self, event, ...)
     self:RegisterEvent("GUILD_ROSTER_UPDATE")
     self:RegisterForDrag("LeftButton")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+    local backdropFrame =
+        CreateFrame("Frame", "PartyLockBackdrop", PartyLock, BackdropTemplateMixin and "BackdropTemplate")
+    backdropFrame:SetPoint("CENTER")
+    backdropFrame:SetAllPoints()
+    backdropFrame:SetFrameLevel(0)
+    backdropFrame:SetBackdrop(
+        {
+            bgFile = "Interface/DialogFrame/UI-DialogBox-Background",
+            edgeFile = "Interface/DialogFrame/UI-DialogBox-Border",
+            edgeSize = 32,
+            insets = {left = 4, right = 4, top = 4, bottom = 4}
+        }
+    )
+
+    backdropFrame:Show()
 end
 local function incomingMessage(arg1, arg2)
     if (arg1 == "PartyLockParty" or arg1 == "PartyLockGuild") and arg2 ~= nil then
@@ -604,13 +644,13 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
         updatePlayerInfo()
         updateParty()
         updateGuild()
-        updateTableData()
+        updateTableData(BottomTabIndex)
     elseif event == "CHAT_MSG_ADDON" then
         incomingMessage(arg1, arg2)
     elseif event == "GROUP_ROSTER_UPDATE" then
         updatePartyMemberList()
         PartyLock_BottomTab_Click()
-    elseif event == "GUILD_ROSTER_UPDATE" then
+    elseif event == "GUILD_ROSTER_UPDATE" and GuildTable ~= nil then
         GuildTable:Refresh()
     end
 end
@@ -624,5 +664,5 @@ function PartyLock_BottomTab_Click(self, event, ...)
         BottomTabIndex = id
         BottomTab = Tabs[id] or 1
     end
-    updateTableData()
+    updateTableData(BottomTabIndex)
 end

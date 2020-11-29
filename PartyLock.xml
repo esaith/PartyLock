@@ -1,57 +1,48 @@
-﻿<Ui xmlns="http://www.blizzard.com/wow/ui/" 
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-                   xsi:schemaLocation="http://www.blizzard.com/wow/ui/ 
-                   ..\..\FrameXML\UI.xsd">   
-<Script file="Libs\LibStub\LibStub.lua"/>
-<Script file="Libs\CallbackHandler-1.0.lua"/>
-<Script file="PartyLock.lua"/>
+﻿<Ui xmlns="http://www.blizzard.com/wow/ui/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ 
+                   ..\..\FrameXML\UI.xsd">
+    <Script file="Libs\LibStub\LibStub.lua"/>
+    <Script file="Libs\CallbackHandler-1.0.lua"/>
+    <Script file="PartyLock.lua"/>
 
-<Include file="Libs\lib-st.xml"/>
+    <Include file="Libs\lib-st.xml"/>
 
-<Frame name="PartyLock" parent="UIParent" hidden="true" frameStrata="HIGH" inherits="" movable="true">
-	<Size x="890" y="630" />
-	<Anchors>
-		<Anchor point="CENTER" relativeTo="UIParent" relativePoint="CENTER" />
-	</Anchors>	
-    <Backdrop bgFile="Interface\DialogFrame\UI-DialogBox-Background" edgeFile="Interface\DialogFrame\UI-DialogBox-Border" tile="true">
-        <EdgeSize>
-            <AbsValue val="32"/>
-        </EdgeSize>
-        <TileSize>
-            <AbsValue val="32"/>
-        </TileSize>       
-    </Backdrop>
-    <Layers>
-        <Layer level="ARTWORK">
-            <Texture name="$parentHeader" file="Interface\DialogFrame\UI-DialogBox-Header">
-                <Size>
-                    <AbsDimension x="300" y="60"/>
-                </Size>
-                <Anchors>
-                    <Anchor point="TOP">
-                        <Offset>
-                            <AbsDimension x="0" y="10"/>
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </Texture>
-        </Layer>
-    </Layers>
-	<Scripts>
-        <OnLoad function="PartyLock_OnLoad" />
-        <OnShow function="PartyLock_OnShow" />
-        <OnEvent function="PartyLock_OnEvent" />
-        <OnDragStart>self:StartMoving();</OnDragStart>
-        <OnDragStop>self:StopMovingOrSizing();</OnDragStop>
-	</Scripts>
-</Frame>
-<Frame name="$parent_BottomTabs" parent="PartyLock">
+    <Frame name="PartyLock" parent="UIParent" hidden="true" frameStrata="HIGH" inherits="" movable="true">
+        <Size x="890" y="630" />
+        <Anchors>
+            <Anchor point="CENTER" relativeTo="UIParent" relativePoint="CENTER" />
+        </Anchors>
+        <Layers>
+            <Layer level="OVERLAY">
+                <Texture name="$parentHeader" file="Interface\DialogFrame\UI-DialogBox-Header">
+                    <Size>
+                        <AbsDimension x="300" y="60"/>
+                    </Size>
+                    <Anchors>
+                        <Anchor point="TOP">
+                            <Offset>
+                                <AbsDimension x="0" y="10"/>
+                            </Offset>
+                        </Anchor>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnLoad function="PartyLock_OnLoad" />
+            <OnShow function="PartyLock_OnShow" />
+            <OnEvent function="PartyLock_OnEvent" />
+            <OnDragStart>self:StartMoving();</OnDragStart>
+            <OnDragStop>self:StopMovingOrSizing();</OnDragStop>
+        </Scripts>
+    </Frame>
+    <Frame name="$parent_BottomTabs" parent="PartyLock">
         <Size x="60" y="30" />
         <Anchors>
             <Anchor point="TOPRIGHT" relativeTo="PartyLock" relativePoint="BOTTOMLEFT" x="70" y="5"/>
         </Anchors>
         <Frames>
-            <Button name="$parentTab1" inherits="CharacterFrameTabButtonTemplate" id="1" text="Group">
+            <Button name="$parentTab1" inherits="CharacterFrameTabButtonTemplate" id="1" text="MGroup">
                 <Anchors>
                     <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent" x="-10"/>
                 </Anchors>
@@ -66,9 +57,24 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="$parentTab2" inherits="CharacterFrameTabButtonTemplate" id="2" text="Guild">
+            <Button name="$parentTab2" inherits="CharacterFrameTabButtonTemplate" id="2" text="HGroup">
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentTab1" x="-15"/>
+                </Anchors>
+                <Scripts>
+                    <OnShow>
+                        PanelTemplates_TabResize(self, 0)
+                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+                    </OnShow>
+                    <OnClick>	
+                        PartyLock_BottomTab_Click(self, "OnClick" )					
+						PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="$parentTab3" inherits="CharacterFrameTabButtonTemplate" id="3" text="MGuild">
+                <Anchors>
+                    <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentTab2" x="-15"/>
                 </Anchors>
                 <Scripts>
                     <OnShow>
@@ -80,14 +86,29 @@
                         PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
                     </OnClick>
                 </Scripts>
-            </Button>            
+            </Button>
+            <Button name="$parentTab4" inherits="CharacterFrameTabButtonTemplate" id="4" text="HGuild">
+                <Anchors>
+                    <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentTab3" x="-15"/>
+                </Anchors>
+                <Scripts>
+                    <OnShow>
+                        PanelTemplates_TabResize(self, 0)
+                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+                    </OnShow>
+                    <OnClick>
+						PartyLock_BottomTab_Click(self, "OnClick" )
+                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+                    </OnClick>
+                </Scripts>
+            </Button>
         </Frames>
-		<Scripts>
-			<OnLoad>
-				PanelTemplates_SetNumTabs(self, 2)
+        <Scripts>
+            <OnLoad>
+				PanelTemplates_SetNumTabs(self, 4)
 				PanelTemplates_SetTab(PartyLock_BottomTabs, 1)
-			</OnLoad>
-			<OnShow function="PartyLock_OnShow" />
-		</Scripts>
+            </OnLoad>
+            <OnShow function="PartyLock_OnShow" />
+        </Scripts>
     </Frame>
 </Ui>

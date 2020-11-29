@@ -1,6 +1,6 @@
-﻿## Interface: 80000
+﻿## Interface: 90000
 ## Title: |cff0959A3Party Lock|r
-## Version: 1.05
+## Version: 1.06
 ## Author: eSaith
 ## SavedVariablesPerCharacter: PartyLockVar
 
