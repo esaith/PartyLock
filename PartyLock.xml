@@ -42,63 +42,43 @@
             <Anchor point="TOPRIGHT" relativeTo="PartyLock" relativePoint="BOTTOMLEFT" x="70" y="5"/>
         </Anchors>
         <Frames>
-            <Button name="$parentTab1" inherits="CharacterFrameTabButtonTemplate" id="1" text="MGroup">
+            <Button name="$parentTab1" inherits="PanelTabButtonTemplate" id="1" text="Mythic Party">
                 <Anchors>
                     <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$parent" x="-10"/>
                 </Anchors>
                 <Scripts>
-                    <OnShow>
-                        PanelTemplates_TabResize(self, 0)
-                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
-                    </OnShow>
                     <OnClick>	
-                        PartyLock_BottomTab_Click(self, "OnClick" )					
-						PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+                        PartyLock_BottomTab_Click(self, "OnClick")
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="$parentTab2" inherits="CharacterFrameTabButtonTemplate" id="2" text="HGroup">
+            <Button name="$parentTab2" inherits="PanelTabButtonTemplate" id="2" text="Heroic Party">
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentTab1" x="-15"/>
                 </Anchors>
                 <Scripts>
-                    <OnShow>
-                        PanelTemplates_TabResize(self, 0)
-                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
-                    </OnShow>
                     <OnClick>	
-                        PartyLock_BottomTab_Click(self, "OnClick" )					
-						PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+                        PartyLock_BottomTab_Click(self, "OnClick")						
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="$parentTab3" inherits="CharacterFrameTabButtonTemplate" id="3" text="MGuild">
+            <Button name="$parentTab3" inherits="PanelTabButtonTemplate" id="3" text="Mythic Guild">
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentTab2" x="-15"/>
                 </Anchors>
                 <Scripts>
-                    <OnShow>
-                        PanelTemplates_TabResize(self, 0)
-                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
-                    </OnShow>
                     <OnClick>
-						PartyLock_BottomTab_Click(self, "OnClick" )
-                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+						PartyLock_BottomTab_Click(self, "OnClick")
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="$parentTab4" inherits="CharacterFrameTabButtonTemplate" id="4" text="HGuild">
+            <Button name="$parentTab4" inherits="PanelTabButtonTemplate" id="4" text="Heroic Guild">
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentTab3" x="-15"/>
                 </Anchors>
                 <Scripts>
-                    <OnShow>
-                        PanelTemplates_TabResize(self, 0)
-                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
-                    </OnShow>
                     <OnClick>
-						PartyLock_BottomTab_Click(self, "OnClick" )
-                        PanelTemplates_SetTab(PartyLock_BottomTabs, self:GetID());
+						PartyLock_BottomTab_Click(self, "OnClick" )                        
                     </OnClick>
                 </Scripts>
             </Button>
@@ -106,7 +86,6 @@
         <Scripts>
             <OnLoad>
 				PanelTemplates_SetNumTabs(self, 4)
-				PanelTemplates_SetTab(PartyLock_BottomTabs, 1)
             </OnLoad>
             <OnShow function="PartyLock_OnShow" />
         </Scripts>

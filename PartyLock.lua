@@ -10,39 +10,48 @@ local GuildTable
 local playerInGuild
 local ScrollingTable
 local CURRENTPLAYER
-local Tabs = {"Party", "Guild"}
+local Tabs = {"Mythic Party", "Heroic Party", "Mythic Guild", "Heroic Guild"}
 local BottomTab
 local BottomTabIndex
 local PartyList
 
-local raidList = {}
--- raidList[1] = {full = "Atal'Dazar", short = "Atal"}
--- raidList[2] = {full = "Freehold", short = "FH"}
--- raidList[3] = {full = "Kings' Rest", short = "KR"}
--- raidList[4] = {full = "Shrine of the Storm", short = "SotS"}
--- raidList[5] = {full = "Siege of Boralus", short = "SoB"}
--- raidList[6] = {full = "Temple of Sethraliss", short = "ToS"}
--- raidList[7] = {full = "The MOTHERLODE!!", short = "LODE"}
--- raidList[8] = {full = "The Underrot", short = "TU"}
--- raidList[9] = {full = "Tol Dagor", short = "TD"}
--- raidList[10] = {full = "Waycrest Manor", short = "WM"}
-raidList[1] = {full = "The Necrotic Wake", short = "NW"}
-raidList[2] = {full = "Plaguefall", short = "PF"}
-raidList[3] = {full = "Mists of Tirna Scithe", short = "MoTS"}
-raidList[4] = {full = "Halls of Atonement", short = "HoA"}
-raidList[5] = {full = "Theater of Pain", short = "ToP"}
-raidList[6] = {full = "De Other Side", short = "DoS"}
-raidList[7] = {full = "Spires of Ascension", short = "SoA"}
-raidList[8] = {full = "Sanguine Depths", short = "SD"}
+local allDungeons = {
+    SL = {
+        ExpansionName = 'ShadowLands',
+        xpac = 'SL',
+        dungeons = {
+            [1] = {fullName = "The Necrotic Wake", short = "NW"},
+            [2] = {fullName = "Plaguefall", short = "PF"},
+            [3] = {fullName = "Mists of Tirna Scithe", short = "MoTS"},
+            [4] = {fullName = "Halls of Atonement", short = "HoA"},
+            [5] = {fullName = "Theater of Pain", short = "ToP"},
+            [6] = {fullName = "De Other Side", short = "DoS"},
+            [7] = {fullName = "Spires of Ascension", short = "SoA"},
+            [8] = {fullName = "Sanguine Depths", short = "SD"},
+            [9] = {fullName = "Tazavesh, The Veiled Market", short = "TM"}
+        }
+    },
+    DF = {
+        ExpansionName = 'DragonFlight',
+        xpac = 'DF',
+        dungeons = {
+            [1] = {fullName = "Algeth'ar Academy", shortName = "AA"},
+            [2] = {fullName = "Brackenhide Hollow", shortName = "BH"},
+            [3] = {fullName = "Halls of Infusion", shortName = "HoI"},
+            [4] = {fullName = "Neltharus", shortName = "N"},
+            [5] = {fullName = "Ruby Life Pools", shortName = "RLP"},
+            [6] = {fullName = "The Azure Vault", shortName = "AV"},
+            [7] = {fullName = "The Nokhud Offensive", shortName = "NO"},
+            [8] = {fullName = "Uldaman: Legacy of Tyr", shortName = "ULT"}
+        }
+    }
+}
+
+local selectedXpac = allDungeons.DF
 
 local diffList = {}
---diffList[0] = "Normal"
 diffList[1] = "Heroic"
 diffList[2] = "Mythic"
---diffList[3] = "10 Player (Heroic)"
---diffList[4] = "25 Player (Heroic)"
---diffList[5] = "10 Player (Mythic)"
---diffList[6] = "25 Player (Mythic)"
 
 local function printTable(tb, spacing)
     if spacing == nil then
@@ -72,14 +81,6 @@ local function printTable(tb, spacing)
 
     print(spacing .. "Leaving Table")
 end
-local function console(...)
-    if ... == nil then
-        return
-    end
-
-    print(...)
-end
-
 local function parseTime(time)
     time = math.floor(tonumber(time))
 
@@ -89,11 +90,11 @@ local function parseTime(time)
     end
 
     if time < 1000 then
-        while time > 0 and time < 1000 do
+        while time < 1000 do
             time = time * 10
         end
     elseif time > 10000 then
-        while time > 0 and time > 10000 do
+        while time > 10000 do
             time = time / 10
         end
     end
@@ -123,19 +124,18 @@ local function requestOnEnter(self, motion)
     GameTooltip:AddLine("Manually update with online guild and party members on their mythics lock outs")
     GameTooltip:Show()
 end
-local function dungeonToInt(d)
-    for index, dungeon in pairs(raidList) do
-        if d == dungeon.full then
+local function dungeonNameToInt(dungeonName, dungeonList)
+    for index, dungeon in pairs(dungeonList) do
+        if dungeonName == dungeon.fullName then
             return index
         end
     end
-
     return -1
 end
-local function intToDungeon(int)
+local function intToDungeonName(int, dungeonList)
     int = tonumber(int)
-    if raidList[int] then
-        return raidList[int].full
+    if dungeonList[int] then
+        return dungeonList[int].fullName
     end
     return "Dungeon Unknown"
 end
@@ -147,10 +147,12 @@ local function difficultyToInt(diff)
     end
     return -1
 end
-local function intToDifficulty(int)
-    int = tonumber(int)
-    if diffList[int] then
-        return diffList[int]
+local function intToDifficulty(val)
+    if val == nil then return nil end
+    val = tonumber(val)
+
+    if diffList[val] ~= nil then
+        return diffList[val]
     end
 
     return nil
@@ -188,6 +190,17 @@ local function getCurrentPlayer()
 
     return CURRENTPLAYER
 end
+local function getExpansionIdByDungeonName(dungeonName)
+    for xpId, xpacTable in pairs(allDungeons) do
+        for index, dungeonData in ipairs(xpacTable.dungeons) do
+            if dungeonName == dungeonData.fullName then
+                return xpId
+            end
+        end
+    end
+
+    return nil
+end
 local updatePlayerInfoTime
 local function updatePlayerInfo()
     if not updatePlayerInfoTime or updatePlayerInfoTime + 30 < time() then
@@ -200,13 +213,24 @@ local function updatePlayerInfo()
         local player = getCurrentPlayer()
 
         for i = 1, instanceCount do
-            local iName, _, iReset, _, _, _, _, _, _, iDifficultyName = GetSavedInstanceInfo(i)
-            if iReset > 0 then
-                iReset = iReset + time()
-                iReset = math.ceil((iReset / 1000) % 10000)
-                PartyLockVar.player[player].savedDungeons[iDifficultyName] =
-                    PartyLockVar.player[player].savedDungeons[iDifficultyName] or {}
-                PartyLockVar.player[player].savedDungeons[iDifficultyName][iName] = {time = iReset}
+            local name, _, reset, _, _, _, _, _, _, difficulty = GetSavedInstanceInfo(i)
+            if reset > 0 and difficulty == 'Mythic' or difficulty == 'Heroic' then
+                local xpac = getExpansionIdByDungeonName(name)
+                
+                if xpac ~= nil then
+                    reset = reset + time()
+                    reset = math.ceil((reset / 1000) % 10000)
+
+                    if PartyLockVar.player[player].savedDungeons[xpac] == nil then
+                        PartyLockVar.player[player].savedDungeons[xpac] = {}
+                    end
+
+                    if PartyLockVar.player[player].savedDungeons[xpac][difficulty] == nil then
+                        PartyLockVar.player[player].savedDungeons[xpac][difficulty] = {}
+                    end
+
+                    PartyLockVar.player[player].savedDungeons[xpac][difficulty][name] = {time = reset}
+                end
             end
         end
 
@@ -253,24 +277,31 @@ local function stageMessage()
         return ""
     end
 
-    local msg = player .. "," .. PartyLockVar.player[player].stats.spec
-    msg = msg .. "," .. PartyLockVar.player[player].stats.ilvl
+    local stats = player .. "," .. PartyLockVar.player[player].stats.spec
+    stats = stats .. "," .. PartyLockVar.player[player].stats.ilvl..','
 
-    for difficulty, dungeons in pairs(PartyLockVar.player[player].savedDungeons) do
-        for dungeon, stats in pairs(PartyLockVar.player[player].savedDungeons[difficulty]) do
-            local t = math.floor(stats.time)
-            if t > 0 then
-                local diff = difficultyToInt(difficulty)
-                local dun = dungeonToInt(dungeon)
+    local dungeonStr = ''
+    --PartyLockVar.player[player].savedDungeons[xpac][difficulty][name] = {time = reset}
 
-                if dun and dun ~= -1 and diff and diff ~= "Dungeon Unknown" then
-                    msg = msg .. "," .. diff .. "," .. dun .. "," .. tostring(math.floor(stats.time))
+    for xpac, xpacData in pairs(PartyLockVar.player[player].savedDungeons) do
+        for difficulty, dungeons in pairs(xpacData) do
+            for dungeonName, stats in pairs(dungeons) do
+                local t = math.floor(stats.time)
+                if t > 0 then
+                    local difficultyIndex = difficultyToInt(difficulty)
+                    local dungeonIndex = dungeonNameToInt(dungeonName, allDungeons[xpac].dungeons)
+
+                    if dungeonIndex > -1 and difficultyIndex > -1 then
+                        dungeonStr = dungeonStr .. xpac .. ",".. difficultyIndex .. "," .. dungeonIndex .. "," .. tostring(math.floor(stats.time)) .. ","
+                    end
                 end
             end
         end
     end
-    msg = msg .. ",,"
-    return msg
+
+    local result = stats..dungeonStr
+    
+    return result
 end
 local lastIsInGuildCheck
 local function isInGuild()
@@ -295,7 +326,7 @@ function updateGuild()
 end
 local updatePartyTime
 function updateParty()
-    if not updatePartyTime or updatePartyTime + 30 < time() and IsInGroup() then
+    if not updatePartyTime or updatePartyTime + 5 < time() and IsInGroup() then
         updatePartyTime = time()
         local msg = stageMessage()
         if not msg then
@@ -308,13 +339,13 @@ local requestGuildUpdateTime
 function requestGuildUpdate()
     if (not requestGuildUpdateTime or PartyLockVar.requestGuildUpdateTime + 30 < time()) and isInGuild() then
         requestGuildUpdateTime = time()
-        C_ChatInfo.SendAddonMessage("PartyLockGuild", "Update", "GUILD")
+        C_ChatInfo.SendAddonMessage("PartyLockGuild", "UpdateRequest", "GUILD")
     end
 end
 function requestPartyUpdate()
     if not PartyLockVar.requestPartyUpdateTime or PartyLockVar.requestPartyUpdateTime + 30 < time() and IsInGroup() then
         PartyLockVar.requestPartyUpdateTime = time()
-        C_ChatInfo.SendAddonMessage("PartyLockParty", "Update", "PARTY")
+        C_ChatInfo.SendAddonMessage("PartyLockParty", "UpdateRequest", "PARTY")
     end
 end
 local function requestUpdate()
@@ -334,12 +365,12 @@ function SlashCmdList.PARTYLOCK(msg, editbox)
     end
 end
 local function parseIncomingPlayer(str)
-    local friend, spec, ilvl, temp = string.match(str, "(.-),(.-),(.-),(.+)")
-
+    local friend, spec, ilvl, str = string.match(str, "(.-),(.-),(.-),(.*)")
+    
     if friend == getCurrentPlayer() or not friend then
         return
     end
-
+ 
     PartyLockVar.player[friend] = {
         stats = {
             spec = spec,
@@ -349,18 +380,38 @@ local function parseIncomingPlayer(str)
         savedDungeons = {}
     }
 
-    local difficulty, dungeon, time, name
-    while str ~= nil and str ~= "," do
-        difficulty, dungeon, time, str = string.match(str, "(.-),(.-),(.-),(.+)")
-        if str and difficulty and dungeon then
-            difficulty = intToDifficulty(difficulty)
-            dungeon = intToDungeon(dungeon)
-            time = parseTime(time)
+    if str == nil then
+        return
+    end
 
-            if difficulty and dungeon then
-                PartyLockVar.player[friend].savedDungeons[difficulty] =
-                    PartyLockVar.player[friend].savedDungeons[difficulty] or {}
-                PartyLockVar.player[friend].savedDungeons[difficulty][dungeon] = {time = time}
+    --PartyLockVar.player[player].savedDungeons[xpac][difficulty][name] = {time = reset}
+    
+    local maxCount = 20
+    local count = 0
+
+    
+    while str ~= nil and strlen(str) > 1 and count < maxCount do
+        count = count + 1
+        
+        local xpac, difficultyIndex, dungeonIndex, resetTime, str = string.match(str, "(.-),(.-),(.-),(.-),(.*)")
+        
+        if xpac ~= nil and allDungeons[xpac].dungeons ~= nil then 
+            local difficulty = intToDifficulty(difficultyIndex)
+            local dungeon = intToDungeonName(dungeonIndex, allDungeons[xpac].dungeons)
+
+            if xpac and difficulty and dungeon then
+                PartyLockVar.player[friend].savedDungeons[xpac] = {}
+                if difficulty and dungeon then
+                    if PartyLockVar.player[friend].savedDungeons[xpac][difficulty] == nil then
+                        PartyLockVar.player[friend].savedDungeons[xpac][difficulty] = {}
+                    end
+
+                    if PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] == nil then 
+                        PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] = {}
+                    end
+
+                    PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] = { time = resetTime}
+                end
             end
         end
     end
@@ -391,6 +442,7 @@ local function updateTableData(tabId)
     if not PartyLockVar or not PartyLockVar.player then
         return
     end
+
     local guildName = GetGuildInfo("player")
     local offlineColor = {r = 0.27, g = 0.38, b = 0.43, a = 1.0} -- #46626E
     local t = math.floor((time() / 1000) % 10000)
@@ -399,13 +451,13 @@ local function updateTableData(tabId)
 
     for player, playerObj in pairs(PartyLockVar.player) do
         local shouldShowPlayer =
-            BottomTab == "MGuild" and isAGuildMember(playerObj, guildName) or
-            BottomTab == "HGuild" and isAGuildMember(playerObj, guildName) or
-            BottomTab == "MParty" and isInParty(player, getPartyMembers()) or
-            BottomTab == "HParty" and isInParty(player, getPartyMembers()) or
-            player == getCurrentPlayer()
+        BottomTab == "Mythic Guild" and isAGuildMember(playerObj, guildName) or
+        BottomTab == "Heroic Guild" and isAGuildMember(playerObj, guildName) or
+        BottomTab == "Mythic Party" and isInParty(player, getPartyMembers()) or
+        BottomTab == "Heroic Party" and isInParty(player, getPartyMembers()) or
+        player == getCurrentPlayer()
 
-        if shouldShowPlayer and playerObj.savedDungeons[difficulty] then
+        if shouldShowPlayer and playerObj.savedDungeons[selectedXpac.xpac] ~= nil and playerObj.savedDungeons[selectedXpac.xpac][difficulty] then
             local color =
                 isAGuildMember(playerObj, guildName) and not isGuildMemberOnline(player) and offlineColor or rowColor
 
@@ -421,16 +473,15 @@ local function updateTableData(tabId)
                 {["value"] = playerObj.stats.spec, ["color"] = color}
             }
 
-            for key, raid in ipairs(raidList) do
+            for index, dungeonTable in ipairs(selectedXpac.dungeons) do
                 local val = ""
-                if
-                    playerObj.savedDungeons and playerObj.savedDungeons[difficulty] and
-                        playerObj.savedDungeons[difficulty][raid.full] ~= nil
+                if playerObj.savedDungeons and playerObj.savedDungeons[selectedXpac.xpac][difficulty] and
+                playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName] ~= nil
                  then
-                    playerObj.savedDungeons[difficulty][raid.full].time =
-                        parseTime(playerObj.savedDungeons[difficulty][raid.full].time)
+                    playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName].time =
+                        parseTime(playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName].time)
 
-                    if playerObj.savedDungeons[difficulty][raid.full].time > t then
+                    if playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName].time > t then
                         val = "X"
                     end
                 end
@@ -442,7 +493,7 @@ local function updateTableData(tabId)
         end
     end
 
-    if (table.getn(rows) > 0 and GuildTable ~= nil) then
+    if GuildTable ~= nil then
         GuildTable:SetData(rows)
     end
 end
@@ -490,10 +541,10 @@ local function createTable()
     }
 
     local dungeon
-    for index, raid in ipairs(raidList) do
+    for index, dungeonTable in ipairs(selectedXpac.dungeons) do
         dungeon = {
-            ["name"] = raid.short,
-            ["width"] = (string.len(raid.short) < 4 and 45) or 50,
+            ["name"] = dungeonTable.shortName,
+            ["width"] = (string.len(dungeonTable.shortName) < 4 and 45) or 50,
             ["align"] = "CENTER",
             ["color"] = oddColor,
             ["colorargs"] = nil,
@@ -614,13 +665,14 @@ function PartyLock_OnLoad(self, event, ...)
 
     backdropFrame:Show()
 end
-local function incomingMessage(arg1, arg2)
-    if (arg1 == "PartyLockParty" or arg1 == "PartyLockGuild") and arg2 ~= nil then
-        if (arg2 == "Update") then
+local function incomingMessage(arg1, arg2, arg3)
+    if (arg1 == "PartyLockParty" or arg1 == "PartyLockGuild") and arg2 ~= nil then    
+        if (arg2 == "UpdateRequest") then
             updateGuild()
             updateParty()
-        elseif string.len(arg2) > 10 then
+        elseif arg2 ~= nil and string.len(arg2) > 5 then
             parseIncomingPlayer(arg2)
+            updateTableData(BottomTabIndex)
         end
     end
 end
@@ -655,14 +707,24 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
     end
 end
 function PartyLock_OnShow(self, event, ...)
-    PanelTemplates_SetTab(PartyLock_BottomTabs, BottomTabIndex)
     requestRaidInfo()
+
+    if BottomTabIndex == nil then
+        BottomTabIndex = 1
+    end
+    
+    BottomTab = Tabs[BottomTabIndex]
+    
+    PanelTemplates_SetTab(PartyLock_BottomTabs, BottomTabIndex);
+    updateTableData(BottomTabIndex)
 end
 function PartyLock_BottomTab_Click(self, event, ...)
     local id = self and self:GetID()
     if id then
         BottomTabIndex = id
-        BottomTab = Tabs[id] or 1
+        BottomTab = Tabs[id]
     end
+
+    PanelTemplates_SetTab(PartyLock_BottomTabs, BottomTabIndex);
     updateTableData(BottomTabIndex)
 end
