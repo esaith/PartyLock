@@ -211,20 +211,17 @@ local function updatePlayerInfo()
 
         local instanceCount = GetNumSavedInstances()
         local player = getCurrentPlayer()
+        PartyLockVar.player[player].savedDungeons[allDungeons.DF.xpac] = {}
 
         for i = 1, instanceCount do
             local name, _, reset, _, _, _, _, _, _, difficulty = GetSavedInstanceInfo(i)
-            if reset > 0 and difficulty == 'Mythic' or difficulty == 'Heroic' then
+            if reset > 0 and (difficulty == 'Mythic' or difficulty == 'Heroic') then
                 local xpac = getExpansionIdByDungeonName(name)
                 
                 if xpac ~= nil then
                     reset = reset + time()
                     reset = math.ceil((reset / 1000) % 10000)
-
-                    if PartyLockVar.player[player].savedDungeons[xpac] == nil then
-                        PartyLockVar.player[player].savedDungeons[xpac] = {}
-                    end
-
+                    
                     if PartyLockVar.player[player].savedDungeons[xpac][difficulty] == nil then
                         PartyLockVar.player[player].savedDungeons[xpac][difficulty] = {}
                     end
@@ -335,10 +332,9 @@ function updateParty()
         C_ChatInfo.SendAddonMessage("PartyLockParty", msg, "PARTY")
     end
 end
-local requestGuildUpdateTime
 function requestGuildUpdate()
-    if (not requestGuildUpdateTime or PartyLockVar.requestGuildUpdateTime + 30 < time()) and isInGuild() then
-        requestGuildUpdateTime = time()
+    if (not PartyLockVar.requestGuildUpdateTime or PartyLockVar.requestGuildUpdateTime + 30 < time()) and isInGuild() then
+        PartyLockVar.requestGuildUpdateTime = time()
         C_ChatInfo.SendAddonMessage("PartyLockGuild", "UpdateRequest", "GUILD")
     end
 end
@@ -349,6 +345,7 @@ function requestPartyUpdate()
     end
 end
 local function requestUpdate()
+    updatePlayerInfo()
     requestGuildUpdate()
     requestPartyUpdate()
 end
@@ -457,7 +454,7 @@ local function updateTableData(tabId)
         BottomTab == "Heroic Party" and isInParty(player, getPartyMembers()) or
         player == getCurrentPlayer()
 
-        if shouldShowPlayer and playerObj.savedDungeons[selectedXpac.xpac] ~= nil and playerObj.savedDungeons[selectedXpac.xpac][difficulty] then
+        if shouldShowPlayer then
             local color =
                 isAGuildMember(playerObj, guildName) and not isGuildMemberOnline(player) and offlineColor or rowColor
 
@@ -475,9 +472,11 @@ local function updateTableData(tabId)
 
             for index, dungeonTable in ipairs(selectedXpac.dungeons) do
                 local val = ""
-                if playerObj.savedDungeons and playerObj.savedDungeons[selectedXpac.xpac][difficulty] and
-                playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName] ~= nil
-                 then
+                if playerObj.savedDungeons 
+                and playerObj.savedDungeons[selectedXpac.xpac] 
+                and playerObj.savedDungeons[selectedXpac.xpac][difficulty] 
+                and playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName] ~= nil
+            then
                     playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName].time =
                         parseTime(playerObj.savedDungeons[selectedXpac.xpac][difficulty][dungeonTable.fullName].time)
 
