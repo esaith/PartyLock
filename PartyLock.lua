@@ -42,8 +42,7 @@ local allDungeons = {
             [5] = {fullName = "Ruby Life Pools", shortName = "RLP"},
             [6] = {fullName = "The Azure Vault", shortName = "AV"},
             [7] = {fullName = "The Nokhud Offensive", shortName = "NO"},
-            [8] = {fullName = "Uldaman: Legacy of Tyr", shortName = "ULT"},
-            [9] = {fullName = "Iron Docks", shortName = "ID"}
+            [8] = {fullName = "Uldaman: Legacy of Tyr", shortName = "ULT"}
         }
     }
 }
@@ -369,12 +368,9 @@ local function parseIncomingPlayer(str)
     --PartyLockVar.player[player].savedDungeons[xpac][difficulty][name] = {time = reset}
     PartyLockVar.player[friend].savedDungeons = {}
 
-    local maxCount = 5
-    local count = 0
-
     local temp
-    while str ~= nil and strlen(str) > 1 and count < maxCount do
-        count = count + 1
+    while str ~= nil and strlen(str) > 1 do
+        
         
         local xpac, difficultyIndex, dungeonIndex, resetTime, temp = string.match(str, "(.-),(.-),(.-),(.-),(.*)")
         str = temp

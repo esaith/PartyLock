@@ -1,6 +1,6 @@
 ﻿## Interface: 100000
 ## Title: Party Lock
-## Version: 1.06
+## Version: 1.08
 ## Author: eSaith
 ## SavedVariablesPerCharacter: PartyLockVar
 
