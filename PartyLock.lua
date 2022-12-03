@@ -42,7 +42,8 @@ local allDungeons = {
             [5] = {fullName = "Ruby Life Pools", shortName = "RLP"},
             [6] = {fullName = "The Azure Vault", shortName = "AV"},
             [7] = {fullName = "The Nokhud Offensive", shortName = "NO"},
-            [8] = {fullName = "Uldaman: Legacy of Tyr", shortName = "ULT"}
+            [8] = {fullName = "Uldaman: Legacy of Tyr", shortName = "ULT"},
+            [9] = {fullName = "Iron Docks", shortName = "ID"}
         }
     }
 }
@@ -119,7 +120,7 @@ local function toggleShowAddon()
         PartyLock:Show()
     end
 end
-local function requestOnEnter(self, motion)
+local function onRequestButtonOnHoverOver(self, motion)
     PrepreToolTip(self)
     GameTooltip:AddLine("Manually update with online guild and party members on their mythics lock outs")
     GameTooltip:Show()
@@ -311,7 +312,7 @@ local function isInGuild()
 end
 local updateGuildTime
 function updateGuild()
-    if (not updateGuildTime or updateGuildTime + 30 < time()) and isInGuild() then
+    if (not updateGuildTime or updateGuildTime + 10 < time()) and isInGuild() then
         updateGuildTime = time()
 
         local msg = stageMessage()
@@ -333,36 +334,20 @@ function updateParty()
     end
 end
 function requestGuildUpdate()
-    if (not PartyLockVar.requestGuildUpdateTime or PartyLockVar.requestGuildUpdateTime + 30 < time()) and isInGuild() then
+    if (not PartyLockVar.requestGuildUpdateTime or PartyLockVar.requestGuildUpdateTime + 15 < time()) and isInGuild() then
         PartyLockVar.requestGuildUpdateTime = time()
         C_ChatInfo.SendAddonMessage("PartyLockGuild", "UpdateRequest", "GUILD")
     end
 end
 function requestPartyUpdate()
-    if not PartyLockVar.requestPartyUpdateTime or PartyLockVar.requestPartyUpdateTime + 30 < time() and IsInGroup() then
+    if not PartyLockVar.requestPartyUpdateTime or PartyLockVar.requestPartyUpdateTime + 5 < time() and IsInGroup() then
         PartyLockVar.requestPartyUpdateTime = time()
         C_ChatInfo.SendAddonMessage("PartyLockParty", "UpdateRequest", "PARTY")
     end
 end
-local function requestUpdate()
-    updatePlayerInfo()
-    requestGuildUpdate()
-    requestPartyUpdate()
-end
-function SlashCmdList.PARTYLOCK(msg, editbox)
-    local command = msg:match("^(%S*)%s*(.-)$")
-    if command == "center" then
-        PartyLock:ClearAllPoints()
-        PartyLock:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-        PartyLock:Show()
-    elseif command == "request" then
-        requestUpdate()
-    else
-        toggleShowAddon()
-    end
-end
 local function parseIncomingPlayer(str)
     local friend, spec, ilvl, str = string.match(str, "(.-),(.-),(.-),(.*)")
+    
     
     if friend == getCurrentPlayer() or not friend then
         return
@@ -382,34 +367,30 @@ local function parseIncomingPlayer(str)
     end
 
     --PartyLockVar.player[player].savedDungeons[xpac][difficulty][name] = {time = reset}
-    
-    local maxCount = 20
+    PartyLockVar.player[friend].savedDungeons = {}
+
+    local maxCount = 5
     local count = 0
 
-    
+    local temp
     while str ~= nil and strlen(str) > 1 and count < maxCount do
         count = count + 1
         
-        local xpac, difficultyIndex, dungeonIndex, resetTime, str = string.match(str, "(.-),(.-),(.-),(.-),(.*)")
-        
-        if xpac ~= nil and allDungeons[xpac].dungeons ~= nil then 
-            local difficulty = intToDifficulty(difficultyIndex)
-            local dungeon = intToDungeonName(dungeonIndex, allDungeons[xpac].dungeons)
-
-            if xpac and difficulty and dungeon then
+        local xpac, difficultyIndex, dungeonIndex, resetTime, temp = string.match(str, "(.-),(.-),(.-),(.-),(.*)")
+        str = temp
+        local difficulty = intToDifficulty(difficultyIndex)
+        local dungeon = intToDungeonName(dungeonIndex, allDungeons[xpac].dungeons)
+       
+        if xpac and allDungeons[xpac].dungeons and difficulty and dungeon then
+            if PartyLockVar.player[friend].savedDungeons[xpac] == nil then                        
                 PartyLockVar.player[friend].savedDungeons[xpac] = {}
-                if difficulty and dungeon then
-                    if PartyLockVar.player[friend].savedDungeons[xpac][difficulty] == nil then
-                        PartyLockVar.player[friend].savedDungeons[xpac][difficulty] = {}
-                    end
-
-                    if PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] == nil then 
-                        PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] = {}
-                    end
-
-                    PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] = { time = resetTime}
-                end
             end
+
+            if PartyLockVar.player[friend].savedDungeons[xpac][difficulty] == nil then                        
+                PartyLockVar.player[friend].savedDungeons[xpac][difficulty] = {}
+            end
+
+            PartyLockVar.player[friend].savedDungeons[xpac][difficulty][dungeon] = { time = tonumber(resetTime) }            
         end
     end
 
@@ -604,17 +585,6 @@ local function createCloseButton()
     btn:SetScript("OnLeave", OnGameToolTipLeave)
     btn:Show()
 end
-local function createRequestButton()
-    local btn = CreateFrame("Button", "$parentRequestButton", PartyLock, "UIMenuButtonStretchTemplate")
-    btn:SetWidth(100)
-    btn:SetHeight(30)
-    btn:SetPoint("BOTTOMRIGHT", "$parent", "BOTTOMRIGHT", -25, 15)
-    btn:SetText("Request Update")
-    btn:SetScript("OnEnter", requestOnEnter)
-    btn:SetScript("OnLeave", OnGameToolTipLeave)
-    btn:SetScript("OnClick", requestUpdate)
-    btn:Show()
-end
 local function registerMessaging()
     C_ChatInfo.RegisterAddonMessagePrefix("PartyLockParty")
     C_ChatInfo.RegisterAddonMessagePrefix("PartyLockGuild")
@@ -626,6 +596,30 @@ local function initGlobalVars()
 
     -- Hide AddOn with <Esc> key
     tinsert(UISpecialFrames, "PartyLock")
+end
+local function requestRaidInfo()
+    if not PartyLockVar.RequestRaidInfoTime or PartyLockVar.RequestRaidInfoTime + 1 < time() then
+        PartyLockVar.RequestRaidInfoTime = time()
+        
+        -- Requests info from server then continue to "UPDATE_INSTANCE_INFO" when server responds
+        RequestRaidInfo()    
+    end
+end
+local function onRequestButtonClick()
+    requestRaidInfo()
+    requestGuildUpdate()
+    requestPartyUpdate()
+end
+local function createRequestButton()
+    local btn = CreateFrame("Button", "$parentRequestButton", PartyLock, "UIMenuButtonStretchTemplate")
+    btn:SetWidth(100)
+    btn:SetHeight(30)
+    btn:SetPoint("BOTTOMRIGHT", "$parent", "BOTTOMRIGHT", -25, 15)
+    btn:SetText("Request Update")
+    btn:SetScript("OnEnter", onRequestButtonOnHoverOver)
+    btn:SetScript("OnLeave", OnGameToolTipLeave)
+    btn:SetScript("OnClick", onRequestButtonClick)
+    btn:Show()
 end
 local function addonInit()
     initGlobalVars()
@@ -664,8 +658,8 @@ function PartyLock_OnLoad(self, event, ...)
 
     backdropFrame:Show()
 end
-local function incomingMessage(arg1, arg2, arg3)
-    if (arg1 == "PartyLockParty" or arg1 == "PartyLockGuild") and arg2 ~= nil then    
+local function receiveUpdate(arg1, arg2)
+    if (arg1 == "PartyLockParty" or arg1 == "PartyLockGuild") and arg2 ~= nil then
         if (arg2 == "UpdateRequest") then
             updateGuild()
             updateParty()
@@ -673,15 +667,6 @@ local function incomingMessage(arg1, arg2, arg3)
             parseIncomingPlayer(arg2)
             updateTableData(BottomTabIndex)
         end
-    end
-end
-local function requestRaidInfo()
-    RequestRaidInfo()
-    if not PartyLockVar.RequestRaidInfoTime or PartyLockVar.RequestRaidInfoTime + 30 < time() then
-        PartyLockVar.RequestRaidInfoTime = time()
-
-        -- Requests info from server then continue to "UPDATE_INSTANCE_INFO" when server responds
-        RequestRaidInfo()
     end
 end
 function PartyLock_OnEvent(self, event, arg1, arg2)
@@ -692,12 +677,13 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
         playerInit()
         requestRaidInfo()
     elseif event == "UPDATE_INSTANCE_INFO" then
+        -- Called after RequestRaidInfo has been returned with data
         updatePlayerInfo()
         updateParty()
         updateGuild()
         updateTableData(BottomTabIndex)
     elseif event == "CHAT_MSG_ADDON" then
-        incomingMessage(arg1, arg2)
+        receiveUpdate(arg1, arg2)
     elseif event == "GROUP_ROSTER_UPDATE" then
         updatePartyMemberList()
         PartyLock_BottomTab_Click()
@@ -706,8 +692,6 @@ function PartyLock_OnEvent(self, event, arg1, arg2)
     end
 end
 function PartyLock_OnShow(self, event, ...)
-    requestRaidInfo()
-
     if BottomTabIndex == nil then
         BottomTabIndex = 1
     end
@@ -726,4 +710,16 @@ function PartyLock_BottomTab_Click(self, event, ...)
 
     PanelTemplates_SetTab(PartyLock_BottomTabs, BottomTabIndex);
     updateTableData(BottomTabIndex)
+end
+function SlashCmdList.PARTYLOCK(msg, editbox)
+    local command = msg:match("^(%S*)%s*(.-)$")
+    if command == "center" then
+        PartyLock:ClearAllPoints()
+        PartyLock:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        PartyLock:Show()
+    elseif command == "request" then
+        onRequestButtonClick()
+    else
+        toggleShowAddon()
+    end
 end
